@@ -1,0 +1,80 @@
+1. AWS Lambda Function to Add Two Numbers
+
+import json
+
+def lambda_handler(event, context):
+    try:
+        # Parse input from event (assuming API Gateway input format)
+        body = json.loads(event.get("body", "{}"))
+        num1 = body.get("num1")
+        num2 = body.get("num2")
+
+        # Validate input
+        if num1 is None or num2 is None:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": "Both num1 and num2 are required."})
+            }
+
+        # Perform addition
+        result = num1 + num2
+
+        # Return response
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"result": result})
+        }
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e)})
+        }
+
+
+2. AWS Lambda Function to Store a Document or PDF in an S3 Bucket
+import json
+import boto3
+import base64
+import os
+
+# S3 Configuration
+S3_BUCKET_NAME = "your-bucket-name"
+s3_client = boto3.client("s3")
+
+def lambda_handler(event, context):
+    try:
+        # Parse input
+        body = json.loads(event.get("body", "{}"))
+        file_name = body.get("file_name")
+        file_data = body.get("file_data")  # Base64 encoded file content
+
+        if not file_name or not file_data:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({"error": "file_name and file_data are required."})
+            }
+
+        # Decode the base64 file data
+        file_bytes = base64.b64decode(file_data)
+
+        # Upload to S3
+        s3_client.put_object(
+            Bucket=S3_BUCKET_NAME,
+            Key=file_name,
+            Body=file_bytes,
+            ContentType="application/pdf"  # Change based on file type
+        )
+
+        # Generate S3 File URL
+        file_url = f"https://{S3_BUCKET_NAME}.s3.amazonaws.com/{file_name}"
+
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"message": "File uploaded successfully!", "file_url": file_url})
+        }
+
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e)})
+        }

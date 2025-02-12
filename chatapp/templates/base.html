@@ -1,0 +1,264 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Chat Application{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <script defer src="{% static 'js/script.js' %}"></script>
+    <style>
+        /* Global Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Navbar */
+        .navbar {
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            background: #333;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+        }
+
+        .nav-links li {
+            margin: 0 15px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+        }
+
+        /* Sidebar */
+        .left-menu {
+            width: 200px;
+            position: fixed;
+            left: -200px; /* Hidden initially */
+            top: 60px; /* Below navbar */
+            height: calc(100vh - 60px);
+            background: #222;
+            color: white;
+            transition: left 0.3s ease;
+            padding: 15px;
+        }
+
+        .left-menu.active {
+            left: 0;
+        }
+
+        .menu-items {
+            list-style: none;
+            padding: 10px 0;
+        }
+
+        .menu-items li {
+            margin-bottom: 10px;
+        }
+
+        .menu-items a {
+            color: white;
+            text-decoration: none;
+        }
+
+        /* Menu Toggle */
+        .menu-toggle {
+            background: #444;
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            margin-right: 15px;
+            display: block;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 70px;
+            padding: 20px;
+            flex: 1;
+            background: #f5f5f5;
+        }
+
+        /* Right Panel */
+        .right-panel {
+            width: 300px;
+            background: #ddd;
+            padding: 15px;
+            height: 100vh;
+            position: fixed;
+            right: 0;
+            top: 60px;
+        }
+
+        /* Footer */
+        .footer {
+            background: #222;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .left-menu {
+                width: 200px;
+            }
+
+            .left-menu.active {
+                left: 0;
+            }
+        }
+    </style>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let menuToggle = document.querySelector(".menu-toggle");
+            let leftMenu = document.querySelector(".left-menu");
+
+            menuToggle.addEventListener("click", function () {
+                leftMenu.classList.toggle("active");
+            });
+
+            function fetchNotifications() {
+                fetch("/get_notifications/")
+                    .then(response => response.json())
+                    .then(data => {
+                        const notificationContainer = document.getElementById("notification-container");
+                        notificationContainer.innerHTML = "";
+
+                        if (data.notifications.length === 0) {
+                            notificationContainer.innerHTML = "<p>No new messages</p>";
+                        } else {
+                            data.notifications.forEach(notification => {
+                                let notificationElement = document.createElement("p");
+                                notificationElement.textContent = notification.message;
+                                notificationElement.classList.add("notification-item");
+                                notificationContainer.appendChild(notificationElement);
+                            });
+
+                            let markAsReadBtn = document.createElement("button");
+                            markAsReadBtn.textContent = "Mark all as read";
+                            markAsReadBtn.onclick = markNotificationsRead;
+                            notificationContainer.appendChild(markAsReadBtn);
+                        }
+                    })
+                    .catch(error => console.error("Error fetching notifications:", error));
+            }
+
+            function markNotificationsRead() {
+                fetch("/mark_notifications_read/")
+                    .then(response => response.json())
+                    .then(() => fetchNotifications());
+            }
+
+            fetchNotifications();
+            setInterval(fetchNotifications, 5000);
+        });
+
+        function adjustPageSize() {
+            let width = window.innerWidth;
+            let scale = 1;
+
+            if (width >= 992 && width <= 1600) {
+                scale = 0.9;
+            } else if (width >= 700 && width < 992) {
+                scale = 0.8;
+            } else if (width >= 600 && width < 700) {
+                scale = 0.75;
+            } else if (width < 600) {
+                scale = 0.5;
+            }
+
+            document.body.style.transform = `scale(${scale})`;
+            document.body.style.transformOrigin = "top left";
+        }
+
+        window.addEventListener("resize", adjustPageSize);
+        adjustPageSize();
+    </script>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <button class="menu-toggle">☰</button>
+            <h2 class="logo">ChatApp</h2>
+            <ul class="nav-links">
+                <li><a href="{% url 'chat' %}">Chat</a></li>
+                <li><a href="{% url 'user_list_view' %}">Users</a></li>
+                <li><a href="#">Profile</a></li>
+                <li><a href="{% url 'logout' %}">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Left Sidebar -->
+<div class="left-menu">
+    <h3>Registered Users</h3>
+    <ul class="menu-items">
+        {% for user in users %}
+            <li>{{ user.username }}</li>
+        {% empty %}
+            <li>No users found</li>
+        {% endfor %}
+    </ul>
+</div>
+
+
+    <!-- Main Content -->
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+        <h3>Notifications</h3>
+        <div id="notification-container">
+            <p>Loading notifications...</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2025 ChatApp. All rights reserved.</p>
+    </footer>
+</body>
+
+</html>
