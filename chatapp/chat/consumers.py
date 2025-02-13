@@ -5,19 +5,24 @@ from django.contrib.auth.models import User
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        self.room_name = None  # Initialize room_name to avoid issues in disconnect
+
         if self.scope["user"].is_authenticated:
             self.sender = self.scope["user"].username
         else:
             await self.close()
             return
-        self.receiver = self.scope["url_route"]["kwargs"]["receiver_username"]
 
+        self.receiver = self.scope["url_route"]["kwargs"]["receiver_username"]
         self.room_name = f"chat_{min(self.sender, self.receiver)}_{max(self.sender, self.receiver)}"
+
         await self.channel_layer.group_add(self.room_name, self.channel_name)
         await self.accept()
 
+
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.room_name, self.channel_name)
+        if hasattr(self, "room_name"):  # Check if room_name exists before using it
+            await self.channel_layer.group_discard(self.room_name, self.channel_name)
 
     async def receive(self, text_data):
         data = json.loads(text_data)

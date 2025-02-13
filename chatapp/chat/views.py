@@ -8,6 +8,9 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 
+from django.core.management.utils import get_random_secret_key
+print(get_random_secret_key())
+
 
 def signup_view(request):
     if request.method == 'POST':

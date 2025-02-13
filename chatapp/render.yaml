@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: chatapp
+    runtime: docker
+    repo: https://github.com/sravanicheripally/Chatapp
+    env: python
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: database
+databases:
+  - name: chatapp-db
+    plan: free
